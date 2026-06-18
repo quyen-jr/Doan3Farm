@@ -1,0 +1,37 @@
+{
+  "rooms": [
+    {
+      "roomName": "Room_01",
+      "players": [
+        {
+          "playerName": "player_a",
+          "bagItemSlots": [
+            {
+              "itemId": "Salad",
+              "category": 0,
+              "seedType": 7,
+              "amount": 10
+            },
+            {
+              "itemId": "Fertilizers",
+              "category": 1,
+              "seedType": 0,
+              "amount": 1
+            }
+          ]
+        },
+        {
+          "playerName": "player_b",
+          "bagItemSlots": [
+            {
+              "itemId": "Ngo",
+              "category": 0,
+              "seedType": 5,
+              "amount": 3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,25 +3,37 @@ using UnityEngine;
 public class PlayerAnimEvent : MonoBehaviour
 {
     private Player _player;
+    private bool _didFertilizeInCurrentAnim;
+    private Photon.Pun.PhotonView _photonView;
     private void Awake()
     {
         _player = GetComponent<Player>();
+        _photonView = GetComponent<Photon.Pun.PhotonView>();
+    }
+
+    private bool IsLocalPlayer()
+    {
+        return _photonView == null || _photonView.IsMine;
     }
     public void DisableAllTools()
     {
+        if (!IsLocalPlayer()) return;
         UIController.Instance.landInteraction.DisableAllTools();
     }
     public void DisableWateringCan()
     {
+        if (!IsLocalPlayer()) return;
         UIController.Instance.landInteraction.DisableTool("Watering can");
     }
     public void DisableFertilizer()
     {
+        if (!IsLocalPlayer()) return;
         UIController.Instance.landInteraction.DisableTool("Fertilizer");
     }
     // hoeing
     public void HoeingPlant()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
         {
             UIController.Instance.GetCurrentSelectedLandPlot().HoeingPlant(UIController.Instance.GetCurrentSelectedSmallPlot());
@@ -29,6 +41,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndHoeing()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetActionAfterWorkInSmallPlot();
 
@@ -50,6 +63,7 @@ public class PlayerAnimEvent : MonoBehaviour
     // plan crop
     public void PlantCrop()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
         {
             LandPlot landPlot = UIController.Instance.GetCurrentSelectedLandPlot();
@@ -58,6 +72,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndPlantCrop()
     {
+        if (!IsLocalPlayer()) return;
 
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         //  UIController.Instance.GetCurrentSelectedLandPlot().ResetActionAfterWorkInSmallPlot();
@@ -74,6 +89,7 @@ public class PlayerAnimEvent : MonoBehaviour
     // 
     public void UsePesticide()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
         {
             UIController.Instance.GetCurrentSelectedLandPlot().UsePesticide(UIController.Instance.GetCurrentSelectedSmallPlot());
@@ -81,6 +97,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndUsingPesticide()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
         //if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
@@ -93,31 +110,46 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void Fertilize()
     {
+        if (!IsLocalPlayer()) return;
+        if (_didFertilizeInCurrentAnim) return;
+        _didFertilizeInCurrentAnim = true;
+
         if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
         {
             UIController.Instance.GetCurrentSelectedLandPlot().UseFertilizer(UIController.Instance.GetCurrentSelectedSmallPlot());
         }
     }
+
+
+    public void EAFertilize()
+    {
+        if (!IsLocalPlayer()) return;
+        if (_didFertilizeInCurrentAnim) return;
+        _didFertilizeInCurrentAnim = true;
+
+        if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
+        {
+            UIController.Instance.GetCurrentSelectedLandPlot().UseFertilizer(UIController.Instance.GetCurrentSelectedSmallPlot());
+        }
+    }
+
     public void EndUsingFertilize()
     {
+        Debug.Log("ditme");
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
         //if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         //if (!UIController.Instance.GetCurrentSelectedLandPlot().IsCancelAction())
-        //    UIController.Instance.GetCurrentSelectedLandPlot().SetCurrentActionType(LandPlot.ActionType.Fertilizer);
+        //    UIController.Instance.GetCurrentSelectedLandPlot().SetCurrentActionType(LandPlot.ActionType.Pesticedes);
         //else
         //    UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
 
-        // tutorial part
-        //if(TutorialController.Instance.CheckTutorial("Planting", 6)){
-        //    Player.LocalPlayer.playerMovement.CancleActionWhenUseJoyStick();
-        //    TutorialController.Instance.RunTutorial();        
-        //}
-        // end
         UnLockMoving();
     }
     public void RankingPlant()
     {
+        if (!IsLocalPlayer()) return;
 
         if (UIController.Instance.GetCurrentSelectedSmallPlot() != null)
         {
@@ -128,6 +160,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndRankingPlant()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetActionAfterWorkInSmallPlot();
         //if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
@@ -146,6 +179,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void Watering()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedSmallPlot())
         {
             UIController.Instance.GetCurrentSelectedLandPlot().WateringPlant(UIController.Instance.GetCurrentSelectedSmallPlot());
@@ -153,6 +187,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndWatering()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot().GetCurrentActionType() != LandPlot.ActionType.PlantCrop)
             UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
@@ -170,6 +205,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void Harvesting()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedSmallPlot())
         {
             UIController.Instance.GetCurrentSelectedLandPlot().HaverstPlant(UIController.Instance.GetCurrentSelectedSmallPlot());
@@ -178,6 +214,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void EndHarvesting()
     {
+        if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
         //if (!UIController.Instance.GetCurrentSelectedLandPlot().IsCancelAction())
@@ -189,8 +226,7 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void UnLockMoving()
     {
-        Photon.Pun.PhotonView pv = _player.GetComponent<Photon.Pun.PhotonView>();
-        if (pv != null && !pv.IsMine) return;
+        if (!IsLocalPlayer()) return;
 
         _player.playerAnimation.ClearAllTrigger();
         _player.moveSpeed = 3;
@@ -198,10 +234,12 @@ public class PlayerAnimEvent : MonoBehaviour
     }
     public void StartJumping()
     {
+        if (!IsLocalPlayer()) return;
         _player.playerMovement.Jumping();
     }
     public void SetJumping()
     {
+        if (!IsLocalPlayer()) return;
         _player.playerMovement.SetJumpingTrue();
     }
 }

@@ -39,6 +39,15 @@ MonoBehaviour:
   - DestroySpaceship
   - Fire
   - RespawnSpaceship
+  - RpcDisableTool
+  - RpcSetActiveTool
+  - RpcFertilizingCrop
+  - RpcHavertCrop
+  - RpcHoeingPlant
+  - RpcPlantCrop
+  - RpcRakingPlant
+  - RpcUsePesticdes
+  - RpcWateringCrop
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -24,6 +24,8 @@ public class PlayerAnimation : MonoBehaviour
     private Animator _animator;
 
     private int _velocityHashID;
+    private readonly Dictionary<string, float> _lastTriggerTimeByName = new Dictionary<string, float>();
+    private const float TriggerMinIntervalSeconds = 0.2f;
 
     #region Initialize
     private void Awake()
@@ -77,6 +79,16 @@ public class PlayerAnimation : MonoBehaviour
     {
         if (!_locking)
         {
+            float lastTriggerTime;
+            if (_lastTriggerTimeByName.TryGetValue(id, out lastTriggerTime))
+            {
+                if (Time.time - lastTriggerTime < TriggerMinIntervalSeconds)
+                {
+                    return;
+                }
+            }
+            _lastTriggerTimeByName[id] = Time.time;
+
             ClearTrigger("Jump");
             _animator.SetTrigger(id);
         }

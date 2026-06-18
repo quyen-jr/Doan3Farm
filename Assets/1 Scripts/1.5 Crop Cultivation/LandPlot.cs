@@ -169,6 +169,14 @@ public class LandPlot : MonoBehaviour
                 isIgnoreCurrentSmallPlot = true;
 
             }
+            else if (_smallPlot.GetCurrentCrop() == null)
+            {
+                bool canPreFertilize = _smallPlot.IsHoeing() && _smallPlot.IsRanking() && _smallPlot.IsProcessIsRight() && !_smallPlot.IsUseFertilizerBeforePlant();
+                if (!canPreFertilize)
+                {
+                    isIgnoreCurrentSmallPlot = true;
+                }
+            }
 
         }
 
@@ -263,9 +271,14 @@ public class LandPlot : MonoBehaviour
         //}
         if (currentActionType == ActionType.Fertilizer)
         {
-            if (currentSmallPlotToWork.GetCurrentCrop() != null && !currentSmallPlotToWork.CropIsRipe()
-                || currentSmallPlotToWork.GetCurrentCrop() == null)
-            //!currentSmallPlotToWork.IsFree() && 
+            bool hasUnripeCrop = currentSmallPlotToWork.GetCurrentCrop() != null && !currentSmallPlotToWork.CropIsRipe();
+            bool canPreFertilize = currentSmallPlotToWork.GetCurrentCrop() == null
+                                   && currentSmallPlotToWork.IsHoeing()
+                                   && currentSmallPlotToWork.IsRanking()
+                                   && currentSmallPlotToWork.IsProcessIsRight()
+                                   && !currentSmallPlotToWork.IsUseFertilizerBeforePlant();
+
+            if (hasUnripeCrop || canPreFertilize)
             {
                 Player.LocalPlayer.playerMovement.SetMoving(false);
                 UIController.Instance.landInteraction.Fertilize();
@@ -274,7 +287,6 @@ public class LandPlot : MonoBehaviour
                  EBagItemCategory.fertilizer,
                     1
                 );
-                //   StartCoroutine(UseFertilizer(currentSmallPlotToWork));
             }
             else ResetActionAfterWorkInSmallPlot();
 
@@ -383,6 +395,11 @@ public class LandPlot : MonoBehaviour
 
     public void DoAction(ActionType actionType)
     {
+        if (isImplementActionInBigLandPlot && currentActionType == actionType)
+        {
+            return;
+        }
+
         if (actionType == ActionType.Ranking || actionType == ActionType.Hoeing)
         {
             if (isFullCropInPlotLand()) return;
@@ -437,6 +454,7 @@ public class LandPlot : MonoBehaviour
 
     public void UseFertilizer(SmallPlot _currentSmallPlot)
     {
+        if (_currentSmallPlot == null) return;
         Debug.Log("Fer");
         _currentSmallPlot.FertilizingCrop();
 

@@ -3,6 +3,7 @@ using Photon.Realtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using FairyField.Logic;
 
 public class Launcher : MonoBehaviourPunCallbacks
 {
@@ -27,6 +28,7 @@ public class Launcher : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        ConfigurePhotonIdentity();
         SetStatus("Đang kết nối tới Photon...");
 
         createHostButton.interactable = false;
@@ -149,5 +151,18 @@ public class Launcher : MonoBehaviourPunCallbacks
         {
             statusText.text = message;
         }
+    }
+
+    private void ConfigurePhotonIdentity()
+    {
+        string username = "Guest";
+
+        if (UserData.instance != null && !string.IsNullOrWhiteSpace(UserData.instance.GetUsername()))
+        {
+            username = UserData.instance.GetUsername().Trim();
+        }
+
+        PhotonNetwork.NickName = username;
+        PhotonNetwork.AuthValues = new AuthenticationValues(username) { UserId = username };
     }
 }

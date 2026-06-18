@@ -1,11 +1,11 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class SmallPlot : MonoBehaviour
+public class SmallPlot : MonoBehaviourPun
 {
-
     [Header("State Material")]
     [SerializeField] private Material normalMaterial;
     [SerializeField] private Material dryLandMaterial;
@@ -15,33 +15,44 @@ public class SmallPlot : MonoBehaviour
 
     private bool _isUseFertilizerBeforePlant;
     private Collider _collider;
-    private bool isFree;// if has any crop on plot
-                        // private Crop currentCrop;
-                        // private Crop statusCrops; // 1  cây đại diện cho  tất cả các cây trên mảnh ( vì các cây trên mảnh đồng bộ )
+    private bool isFree;
     private bool _istimeToSpawnProblem;
-    private List<Crop> _currentCropList = new List<Crop>();
+    private readonly List<Crop> _currentCropList = new List<Crop>();
 
     private bool isHoeing;
     private bool isRaking;
     private int _maxCropSetUp;
-
 
     [SerializeField] private bool isProcessIsTrue = true;
 
     private void Start()
     {
         _collider = GetComponent<Collider>();
-        
-        FieldPlots fieldPlots= GetComponentInParent<FieldPlots>();
-        _maxCropSetUp = (fieldPlots!=null)? fieldPlots.GetMaxCropInSmallPlot():3;
+
+        FieldPlots fieldPlots = GetComponentInParent<FieldPlots>();
+        _maxCropSetUp = (fieldPlots != null) ? fieldPlots.GetMaxCropInSmallPlot() : 3;
         meshRender.material = normalMaterial;
         isFree = true;
     }
-    private void Update()
-    {
 
+    public void PlantCrop(BagItemConfig cropData)
+    {
+        if (cropData == null || cropData.itemData == null || cropData.itemData.prefabs == null) return;
+
+        string prefabName = cropData.itemData.prefabs.name;
+        string itemDataName = cropData.itemData.name;
+        int category = (int)cropData.category;
+        int seedType = (int)cropData.seedType;
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcPlantCrop), RpcTarget.AllBuffered, prefabName, itemDataName, category, seedType);
+            return;
+        }
+
+        PlantCropInternal(cropData);
     }
-    public void PlantCrop(BagItemConfig _cropData)
+
+    private void PlantCropInternal(BagItemConfig cropData)
     {
         if (!IsFree()) return;
 
@@ -51,32 +62,29 @@ public class SmallPlot : MonoBehaviour
             UIController.Instance.AddWarningByType(this, WarningType.WrongProcess);
         }
 
-        ProcessPlantManyTree(_cropData);
-
+        ProcessPlantManyTree(cropData);
         isFree = false;
     }
 
-    private void ProcessPlantManyTree(BagItemConfig _cropData)
+    private void ProcessPlantManyTree(BagItemConfig cropData)
     {
         float totalWidth = GetSmallPlotSize();
 
         int totalCrops = _maxCropSetUp;
-        float spaceBetweenCrop = totalWidth / (totalCrops + 1); // Cộng 1 để tạo khoảng cách hai bên
+        float spaceBetweenCrop = totalWidth / (totalCrops + 1);
 
         for (int i = 0; i < totalCrops; i++)
         {
-            GameObject newCropObject = Instantiate(_cropData.itemData.prefabs, transform);
+            GameObject newCropObject = Instantiate(cropData.itemData.prefabs, transform);
 
             Crop crop = newCropObject.GetComponent<Crop>();
-            crop.SetConfig(_cropData);
+            crop.SetConfig(cropData);
 
-            // Cây đầu tiên sẽ bắt đầu từ trái, cây cuối cùng ở phải, và các cây giữa sẽ nằm đều
             float offsetX = spaceBetweenCrop * (i + 1) - totalWidth / 2;
 
             newCropObject.transform.localPosition = new Vector3(
                 offsetX, newCropObject.transform.localPosition.y, newCropObject.transform.localPosition.z);
 
-            // Gán các thuộc tính cho cây
             Crop currentCropPlanted = newCropObject.GetComponent<Crop>();
             currentCropPlanted.SetProcessPlantCropIsTrue(isProcessIsTrue);
             currentCropPlanted.SetUseFertilizerBeforePlant(_isUseFertilizerBeforePlant);
@@ -85,19 +93,38 @@ public class SmallPlot : MonoBehaviour
         }
     }
 
-
     public void HoeingPlant()
+    {
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcHoeingPlant), RpcTarget.AllBuffered);
+            return;
+        }
+
+        HoeingPlantInternal();
+    }
+
+    private void HoeingPlantInternal()
     {
         if (!IsFree()) return;
         if (isRaking) isProcessIsTrue = false;
         isHoeing = true;
         setPlotMaterial(hasHoeMaterial);
-
     }
+
     public void RakingPlant()
     {
-        //Debug.Log(isFree);
-        //Debug.Log(isHoeing);
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcRakingPlant), RpcTarget.AllBuffered);
+            return;
+        }
+
+        RakingPlantInternal();
+    }
+
+    private void RakingPlantInternal()
+    {
         if (!IsFree()) return;
 
         if (!isHoeing)
@@ -112,60 +139,73 @@ public class SmallPlot : MonoBehaviour
         }
 
         setPlotMaterial(rakingMaterial);
-        // when raking done  display seedUI to plant
     }
+
     public void HavertCrop()
+    {
+        int actorNumber = PhotonNetwork.InRoom ? PhotonNetwork.LocalPlayer.ActorNumber : -1;
+
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcHavertCrop), RpcTarget.AllBuffered, actorNumber);
+            return;
+        }
+
+        HavertCropInternal(actorNumber);
+    }
+
+    private void HavertCropInternal(int actorNumber)
     {
         if (IsFree()) return;
         if (_currentCropList == null || _currentCropList.Count <= 0) return;
 
-        int aliveCropCount = 0;
+        int ripeCropCount = 0;
         BagItemConfig cropConfig = null;
 
         for (int i = 0; i < _currentCropList.Count; i++)
         {
             Crop crop = _currentCropList[i];
-
             if (crop == null) continue;
 
-            // Lưu config của cây để lát cộng item
             if (cropConfig == null)
             {
                 cropConfig = crop._itemConfig;
             }
 
-            // Cây chưa chết thì được tính là thu hoạch được
-            if (!crop.IsDead())
+            if (!crop.IsDead() && crop.IsRipe())
             {
-                aliveCropCount++;
+                ripeCropCount++;
             }
         }
 
-        // Nếu quy trình trồng đúng và còn cây sống thì mới cộng item
-        if (isProcessIsTrue && aliveCropCount > 0 && cropConfig != null)
+        bool canRewardLocal = actorNumber == -1 || !PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer.ActorNumber == actorNumber;
+        if (isProcessIsTrue && ripeCropCount > 0 && cropConfig != null && canRewardLocal)
         {
-            BagItemManager.Instance.AddItem(cropConfig, aliveCropCount);
+            BagItemManager.Instance.AddItem(cropConfig, ripeCropCount);
         }
 
-        // Xóa warning UI
         UIController.Instance.RemoveWarningByType(this, WarningType.WrongProcess);
         UIController.Instance.RemoveWarningByType(this, WarningType.Ripe);
         UIController.Instance.RemoveWarningByType(this, WarningType.HasWorm);
         UIController.Instance.RemoveWarningByType(this, WarningType.Fertilizer);
         UIController.Instance.RemoveWarningByType(this, WarningType.Water);
 
-        // Reset đất
         setPlotMaterial(dryLandMaterial);
         RemoveAllCrops();
         ResetPlotVariable();
     }
+
     private void RemoveAllCrops()
     {
         for (int i = 0; i < _currentCropList.Count; i++)
         {
-            Destroy(_currentCropList[i].gameObject);
+            if (_currentCropList[i] != null)
+            {
+                Destroy(_currentCropList[i].gameObject);
+            }
         }
     }
+
     private void ResetPlotVariable()
     {
         _currentCropList.Clear();
@@ -178,14 +218,36 @@ public class SmallPlot : MonoBehaviour
 
     public void WateringCrop()
     {
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcWateringCrop), RpcTarget.All);
+            return;
+        }
+
+        WateringCropInternal();
+    }
+
+    private void WateringCropInternal()
+    {
         if (IsFree()) return;
-        //        currentCrop.Watering();
         for (int i = 0; i < _currentCropList.Count; i++)
         {
             _currentCropList[i].Watering();
         }
     }
+
     public void FertilizingCrop()
+    {
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcFertilizingCrop), RpcTarget.All);
+            return;
+        }
+
+        FertilizingCropInternal();
+    }
+
+    private void FertilizingCropInternal()
     {
         if (_currentCropList.Count > 0)
         {
@@ -194,10 +256,25 @@ public class SmallPlot : MonoBehaviour
                 _currentCropList[i].UseFertilizer();
             }
         }
-        else if (isHoeing && isRaking && isProcessIsTrue) _isUseFertilizerBeforePlant = true;
-        Debug.Log(_isUseFertilizerBeforePlant);
+        else if (isHoeing && isRaking && isProcessIsTrue)
+        {
+            if (_isUseFertilizerBeforePlant) return;
+            _isUseFertilizerBeforePlant = true;
+        }
     }
+
     public void UsePesticdes()
+    {
+        if (photonView != null)
+        {
+            photonView.RPC(nameof(RpcUsePesticdes), RpcTarget.All);
+            return;
+        }
+
+        UsePesticdesInternal();
+    }
+
+    private void UsePesticdesInternal()
     {
         if (IsFree()) return;
         for (int i = 0; i < _currentCropList.Count; i++)
@@ -205,37 +282,114 @@ public class SmallPlot : MonoBehaviour
             _currentCropList[i].UsePesticide();
         }
     }
-    public void setPlotMaterial(Material _newMaterial)
+
+    [PunRPC]
+    private void RpcPlantCrop(string prefabName, string itemDataName, int category, int seedType)
     {
-        meshRender.material = _newMaterial;
+        GameObject prefab = Resources.Load<GameObject>(prefabName);
+        if (prefab == null)
+        {
+            Debug.LogWarning("Khong tim thay crop prefab trong Resources: " + prefabName);
+            return;
+        }
+
+        BagItemConfig runtimeConfig = new BagItemConfig();
+        runtimeConfig.category = (EBagItemCategory)category;
+        runtimeConfig.seedType = (ESeedsCircleOptionType)seedType;
+
+        ItemData itemDataAsset = Resources.Load<ItemData>(itemDataName);
+        if (itemDataAsset != null)
+        {
+            runtimeConfig.itemData = itemDataAsset;
+        }
+        else
+        {
+            Crop cropOnPrefab = prefab.GetComponent<Crop>();
+            if (cropOnPrefab != null && cropOnPrefab.GetPlantData() != null)
+            {
+                runtimeConfig.itemData = cropOnPrefab.GetPlantData();
+            }
+            else
+            {
+                runtimeConfig.itemData = ScriptableObject.CreateInstance<ItemData>();
+                runtimeConfig.itemData.prefabs = prefab;
+            }
+        }
+
+        if (runtimeConfig.itemData.prefabs == null)
+        {
+            runtimeConfig.itemData.prefabs = prefab;
+        }
+
+        PlantCropInternal(runtimeConfig);
+    }
+
+    [PunRPC]
+    private void RpcHoeingPlant()
+    {
+        HoeingPlantInternal();
+    }
+
+    [PunRPC]
+    private void RpcRakingPlant()
+    {
+        RakingPlantInternal();
+    }
+
+    [PunRPC]
+    private void RpcHavertCrop(int actorNumber)
+    {
+        HavertCropInternal(actorNumber);
+    }
+
+    [PunRPC]
+    private void RpcWateringCrop()
+    {
+        WateringCropInternal();
+    }
+
+    [PunRPC]
+    private void RpcFertilizingCrop()
+    {
+        FertilizingCropInternal();
+    }
+
+    [PunRPC]
+    private void RpcUsePesticdes()
+    {
+        UsePesticdesInternal();
+    }
+
+    public void setPlotMaterial(Material newMaterial)
+    {
+        meshRender.material = newMaterial;
     }
 
     public bool IsProcessIsRight() => isProcessIsTrue;
     public bool CropIsRipe() => GetCurrentCrop().IsRipe();
+
     public Crop GetCurrentCrop()
     {
         if (_currentCropList.Count <= 0) return null;
         return _currentCropList[_currentCropList.Count - 1];
     }
+
     public bool IsFree() { return _currentCropList.Count == 0; }
-    public bool IsHoeing() { return isHoeing == true; }
-    public bool IsRanking() { return isRaking == true; }
-    public void CanHaverst()
-    {
-        
-    }
-    
+    public bool IsHoeing() { return isHoeing; }
+    public bool IsRanking() { return isRaking; }
+    public bool IsUseFertilizerBeforePlant() { return _isUseFertilizerBeforePlant; }
+    public void CanHaverst() { }
+
     private float GetSmallPlotSize()
     {
-        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>(); // Lấy MeshRenderer từ GameObject
+        MeshRenderer meshRenderer = GetComponentInChildren<MeshRenderer>();
 
         if (meshRenderer != null)
         {
-            // Lấy kích thước chiều rộng từ bounds
             float width = meshRenderer.bounds.size.x;
-            return math.round(width); // Làm tròn giá trị chiều rộng
+            return math.round(width);
         }
 
-        return 0; // Trả về 0 nếu không tìm thấy MeshRenderer
+        return 0;
     }
 }

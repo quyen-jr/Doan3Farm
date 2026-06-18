@@ -59,45 +59,74 @@ public class LandInteraction : MonoBehaviour
     }
     public void Hoe()
     {
-
-        DisableAllTools();
-        EnableTool("Hoe");
+        SetActiveToolAndSync("Hoe");
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Hoe");
     }
     public void Poach()
     {
-        DisableAllTools();
-        EnableTool("Hoe");
+        SetActiveToolAndSync("Hoe");
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Poach");
     }
 
     public void Plant()
     {
-        DisableAllTools();
+        SetActiveToolAndSync(string.Empty);
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Plant");
     }
     public void Water()
     {
-        DisableAllTools();
-        EnableTool("Watering can");
+        SetActiveToolAndSync("Watering can");
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Water");
     }
     public void Fertilize()
     {
-        DisableAllTools();
-        EnableTool("Fertilizer");
+        //if (Player.LocalPlayer != null && Player.LocalPlayer.playerAnimation != null)
+        //{
+        //    if (Player.LocalPlayer.playerAnimation.CheckCurrentAnim("Fertilize"))
+        //    {
+        //        return;
+        //    }
+        //}
+
+        SetActiveToolAndSync("Fertilizer");
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Fertilize");
+
     }
     public void Spray()
     {
-        DisableAllTools();
-        EnableTool("Spray");
+        SetActiveToolAndSync("Spray");
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Pesticide");
     }
     public void Harvest()
     {
+        SetActiveToolAndSync(string.Empty);
         if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Harvest");
     }
+    private void SetActiveToolAndSync(string toolName)
+    {
+        SetActiveToolLocal(toolName);
+
+        if (_photonView != null && _photonView.IsMine)
+        {
+            _photonView.RPC(nameof(RpcSetActiveTool), RpcTarget.Others, toolName);
+        }
+    }
+    private void SetActiveToolLocal(string toolName)
+    {
+        DisableAllTools();
+
+        if (!string.IsNullOrEmpty(toolName))
+        {
+            EnableTool(toolName);
+        }
+    }
+
+    [PunRPC]
+    private void RpcSetActiveTool(string toolName)
+    {
+        SetActiveToolLocal(toolName);
+    }
+
     public void DisableAllTools()
     {
         foreach (KeyValuePair<string, GameObject> tool in _tools)
@@ -118,7 +147,26 @@ public class LandInteraction : MonoBehaviour
     }
     public void DisableTool(string toolName)
     {
-        _tools[toolName].SetActive(false);
+        DisableToolLocal(toolName);
+
+        if (_photonView != null && _photonView.IsMine)
+        {
+            _photonView.RPC(nameof(RpcDisableTool), RpcTarget.Others, toolName);
+        }
+    }
+
+    private void DisableToolLocal(string toolName)
+    {
+        if (_tools.ContainsKey(toolName))
+        {
+            _tools[toolName].SetActive(false);
+        }
+    }
+
+    [PunRPC]
+    private void RpcDisableTool(string toolName)
+    {
+        DisableToolLocal(toolName);
     }
 }
 
