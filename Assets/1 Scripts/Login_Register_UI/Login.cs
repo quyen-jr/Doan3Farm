@@ -1,147 +1,96 @@
 using UnityEngine;
-
-
+using UnityEngine.UI;
+using Firebase;
+using Firebase.Auth;
+using Firebase.Extensions; // Bắt buộc phải có để dùng ContinueWithOnMainThread
+using UnityEngine.SceneManagement;
+using FairyField.Logic;
 public class Login : MonoBehaviour
 {
-    //[SerializeField] private InputField username;
-    //[SerializeField] private InputField password;
-    //[SerializeField] private Button submitBtn;
-    //[SerializeField] private Button registerBtn;
-    //[SerializeField] private PlayerRefScriptableObject playerRef;
-    //private bool _showPassword = false;
+    [SerializeField] private InputField username; // Giờ sẽ đóng vai trò là Email
+    [SerializeField] private InputField password;
+    [SerializeField] private Button submitBtn;
+    [SerializeField] private Button registerBtn;
+    [SerializeField] private PlayerRefScriptableObject playerRef;
+    private bool _showPassword = false;
+    
+    // Biến quản lý Firebase
+    private FirebaseAuth auth;
+    private bool isFirebaseReady = false;
 
-    //void Start()
-    //{
-    //    registerBtn.onClick.AddListener(() => { UILoginManager.Instance.CreatePanel(1); });
-    //    submitBtn.onClick.AddListener(() => { LoginAccount(); });
-    //    Debug.Log(playerRef);
-    //}
-    //public void LoginAccount()
-    //{
-    //    registerBtn.interactable = false;
-    //    submitBtn.interactable = false;
-    //    StartCoroutine(LoginRequest(username.text, password.text));
-    //}
-    //private IEnumerator LoginRequest(string _email, string _password)
-    //{
+    void Start()
+    {
+        registerBtn.onClick.AddListener(() => { UILoginManager.Instance.CreatePanel(1); });
+        submitBtn.onClick.AddListener(() => { LoginAccount(); });
 
+        // Khởi tạo Firebase ban đầu
+        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task => {
+            var dependencyStatus = task.Result;
+            if (dependencyStatus == DependencyStatus.Available)
+            {
+                auth = FirebaseAuth.DefaultInstance;
+                isFirebaseReady = true;
+            }
+            else
+            {
+                Debug.LogError($"Không thể khởi tạo Firebase: {dependencyStatus}");
+                UILoginManager.Instance.CreateNotification("Lỗi kết nối dịch vụ Firebase!");
+            }
+        });
+    }
 
-    //    LoginData userData = new LoginData
-    //    {
-    //        username = _email,
-    //        password = _password
-    //    };
+    public void LoginAccount()
+    {
+        // Nếu Firebase chưa khởi tạo xong thì không cho bấm
+        if (!isFirebaseReady) return;
 
-    //    // Serialize to JSON
-    //    string jsonData = JsonUtility.ToJson(userData, true);
-    //    Debug.Log(jsonData);
-    //    UnityWebRequest request = new UnityWebRequest(BaseAPI.API_LOGIN, "POST")
-    //    {
-    //        uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(jsonData)),
-    //        downloadHandler = new DownloadHandlerBuffer()
-    //    };
-    //    request.SetRequestHeader("Content-Type", "application/json");
+        // Khóa tương tác nút bấm để tránh người chơi spam click liên tục
+        registerBtn.interactable = false;
+        submitBtn.interactable = false;
 
-    //    yield return request.SendWebRequest();
+        string emailText = username.text;
+        string passwordText = password.text;
 
-    //    if (request.result == UnityWebRequest.Result.Success)
-    //    {
-    //        var response = JsonUtility.FromJson<LoginResponseData>(request.downloadHandler.text);
-    //        Debug.Log($"Message: {response.message}, Access Token: {response.data.accessToken}");
-    //        UserData.instance.UserAccessToken = response.data.accessToken;
-    //        Debug.Log(response.data.is_active);
-    //        // when user not active account
-    //        if (!response.data.is_active)
-    //        {
-    //         //   Debug.Log("send request resend");
-    //            //UILoginManager.Instance.CreateAuthencationPanel();
-    //            StartCoroutine(ResendCode(response.data.accessToken));
+        // Tiến hành gọi API đăng nhập bất đồng bộ của Firebase
+        auth.SignInWithEmailAndPasswordAsync(emailText, passwordText).ContinueWithOnMainThread(task => {
 
+            // Xử lý khi đăng nhập THẤT BẠI (Sai tài khoản, mật khẩu, lỗi mạng...)
+            if (task.IsCanceled || task.IsFaulted)
+            {
+                System.AggregateException ex = task.Exception as System.AggregateException;
+                if (ex != null)
+                {
+                    foreach (var innerEx in ex.Flatten().InnerExceptions)
+                    {
+                        Debug.LogError($"[LỖI FIREBASE]: {innerEx.Message}");
+                    }
+                }
 
-    //        }
-    //        else
-    //        {
-    //            playerRef.playerName = username.text;
-    //            SceneManager.LoadScene("Tutorial", LoadSceneMode.Single);
-    //        }
-    //        UserData.instance.SetUsername(_email);
-    //        // LoadSceneGame();
-    //    }
-    //    else
-    //    {
-    //        Debug.Log($"Login Failed: {request.result}, Response: {request.downloadHandler.text}");
-    //        UILoginManager.Instance.CreateNotification("Account or password is incorrect");
-    //        registerBtn.interactable = true;
-    //        submitBtn.interactable = true;
-    //    }
-    //}
-    //public IEnumerator ResendCode(string accessToken)
-    //{
-    //    UnityWebRequest request = new UnityWebRequest(BaseAPI.API_RESENDCODE, "POST")
-    //    {
-    //        uploadHandler = new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes("")),
-    //        downloadHandler = new DownloadHandlerBuffer()
-    //    };
+                UILoginManager.Instance.CreateNotification("Tài khoản hoặc mật khẩu không chính xác");
 
-    //    // Add the authorization token as a Bearer token
-    //    request.SetRequestHeader("Authorization", $"Bearer {UserData.instance.UserAccessToken}");
-    //    request.SetRequestHeader("Content-Type", "text/plain");
+                // Mở lại tương tác cho các nút bấm để người chơi nhập lại
+                registerBtn.interactable = true;
+                submitBtn.interactable = true;
+                return;
+            }
 
-    //    yield return request.SendWebRequest();
+            // Xử lý khi đăng nhập THÀNH CÔNG
+            AuthResult result = task.Result;
+            FirebaseUser user = result.User;
+            Debug.Log($"Đăng nhập thành công tài khoản: {user.Email}");
 
-    //    //Debug.Log()
-    //    if (request.result == UnityWebRequest.Result.Success)
-    //    {
-    //       // var response = JsonUtility.FromJson<LoginResponseData>(request.downloadHandler.text);
-    //        UILoginManager.Instance.CreateAuthencationPanel("email của bạn");
-    //        // Debug.Log(response.message);
-    //        // UILoginManager.Instance.CreateAuthencationPanel();
-    //        // SceneManager.LoadScene("SampleScene", LoadSceneMode.Single);
-    //        // UserData.instance.SetUsername(username.text);
-    //    }
-    //    else
-    //    {
-    //        Debug.Log($"Register Failed: {request.error}, Response: {request.downloadHandler.text}");
-    //    }
-    //}
+            // Lưu tên người dùng vào ScriptableObject
+            playerRef.playerName = username.text;
+            UserData.instance.SetUsername( username.text );
 
-
-    //public void LoadSceneGame()
-    //{
-    //    SceneManager.LoadScene(1);
-    //}
-    //public void TogglePassword()
-    //{
-    //    _showPassword = !_showPassword;
-    //    if (_showPassword)
-    //    {
-    //        password.contentType = InputField.ContentType.Standard;
-    //    }
-    //    else
-    //    {
-    //        password.contentType = InputField.ContentType.Password;
-    //    }
-    //    password.ActivateInputField();
-    //}
-    //[System.Serializable]
-    //private class LoginResponseData
-    //{
-    //    public string message;
-    //    public TokenData data;
-    //}
-    //[System.Serializable]
-    //private class LoginData
-    //{
-    //    public string username;
-    //    public string password;
-
-    //}
-
-    //[System.Serializable]
-    //private class TokenData
-    //{
-    //    public string accessToken, refreshToken;
-    //    public bool is_active;
-    //}
-
+            // Bỏ qua bước kiểm tra EmailVerified -> Chuyển thẳng vào game luôn
+            SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
+        });
+    }
+    public void TogglePassword()
+    {
+        _showPassword = !_showPassword;
+        password.contentType = _showPassword ? InputField.ContentType.Standard : InputField.ContentType.Password;
+        password.ActivateInputField();
+    }
 }

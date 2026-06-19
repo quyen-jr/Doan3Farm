@@ -283,51 +283,6 @@ MonoBehaviour:
   m_FirstSelected: {fileID: 0}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
---- !u!1 &1340121681
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1340121683}
-  - component: {fileID: 1340121682}
-  m_Layer: 0
-  m_Name: ItemData
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1340121682
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1340121681}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 130a1efb43cd422488605ea31c517f9c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  initSuccess: 0
---- !u!4 &1340121683
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1340121681}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 758.7259, y: 598.4846, z: -5.7416573}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1777370276
 GameObject:
   m_ObjectHideFlags: 0
@@ -653,6 +608,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6274510038650896438, guid: c028b64c216f93947bb09b57af312171,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -11.5998535
+      objectReference: {fileID: 0}
+    - target: {fileID: 6274510038650896438, guid: c028b64c216f93947bb09b57af312171,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -32.19995
+      objectReference: {fileID: 0}
     - target: {fileID: 7963162398617743622, guid: c028b64c216f93947bb09b57af312171,
         type: 3}
       propertyPath: m_Name
@@ -671,5 +636,4 @@ SceneRoots:
   - {fileID: 2028181153}
   - {fileID: 7381149322715465828}
   - {fileID: 1925021015}
-  - {fileID: 1340121683}
   - {fileID: 1777370277}
