@@ -29,7 +29,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     [SerializeField] private byte maxPlayers = 4;
 
     // Tên file JSON của bạn
-    private string saveFileName = "BagItemRoomPlayerData.json"; 
+    private string saveFileName = "BagItemRoomPlayerData.json";
     private string existingRoomName = "";
 
     private void Awake()
@@ -40,7 +40,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     private void Start()
     {
         ConfigurePhotonIdentity();
-        
+
         // Đọc file từ ổ cứng ngay khi khởi động
         CheckExistingPlayerData();
 
@@ -74,7 +74,7 @@ public class Launcher : MonoBehaviourPunCallbacks
     {
         // Application.persistentDataPath tự động trỏ tới: C:\Users\TênUser\AppData\LocalLow\TênCôngTy\TênGame
         string filePath = Path.Combine(Application.persistentDataPath, saveFileName);
-        
+
         Debug.Log($"Đang tìm file save tại: {filePath}");
 
         // Kiểm tra xem file có tồn tại không
@@ -89,10 +89,10 @@ public class Launcher : MonoBehaviourPunCallbacks
         {
             // Đọc toàn bộ chữ trong file JSON
             string jsonContent = File.ReadAllText(filePath);
-            
+
             // Ép kiểu về cấu trúc class của bạn
             BagItemSaveFile data = JsonUtility.FromJson<BagItemSaveFile>(jsonContent);
-            
+
             if (data != null && data.rooms != null)
             {
                 string currentName = PhotonNetwork.NickName;
@@ -107,7 +107,7 @@ public class Launcher : MonoBehaviourPunCallbacks
                             existingRoomName = room.roomName;
                             ShowExistPanel();
                             Debug.Log($"=> TÌM THẤY! Bạn đã ở phòng: {existingRoomName}");
-                            return; 
+                            return;
                         }
                     }
                 }
@@ -141,11 +141,20 @@ public class Launcher : MonoBehaviourPunCallbacks
     {
         if (!string.IsNullOrEmpty(existingRoomName))
         {
-            SetStatus("Đang join lại phòng cũ: " + existingRoomName);
-            PhotonNetwork.JoinRoom(existingRoomName); 
+            SetStatus("Đang khôi phục/vào phòng cũ: " + existingRoomName);
+
+            // Tạo cấu hình phòng tương tự như lúc tạo phòng mới
+            RoomOptions roomOptions = new RoomOptions
+            {
+                MaxPlayers = maxPlayers,
+                IsVisible = true,
+                IsOpen = true
+            };
+
+            // THAY THẾ: Sử dụng JoinOrCreateRoom thay vì JoinRoom thông thường
+            PhotonNetwork.JoinOrCreateRoom(existingRoomName, roomOptions, TypedLobby.Default);
         }
     }
-
     public override void OnConnected()
     {
         SetStatus("Đã kết nối tới Photon Name Server...");
