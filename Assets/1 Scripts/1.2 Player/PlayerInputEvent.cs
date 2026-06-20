@@ -101,7 +101,25 @@ public class PlayerInputEvent : MonoBehaviour
         {
             if (player != null && player.playerInteract != null)
             {
-                player.playerInteract.Interact(_tapPos);
+                Vector2 finalInteractPos = Vector2.zero;
+
+                // CÁCH CHẮC CHẮN NHẤT TRÊN PC: Kiểm tra xem chuột trái có đang được nhấn giữ/click không
+                if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    finalInteractPos = Mouse.current.position.ReadValue();
+                }
+
+                // Nếu không phải do click chuột (hoặc đang chạy trên Mobile), lấy vị trí Tap
+                if (finalInteractPos == Vector2.zero)
+                {
+                    finalInteractPos = _tapPos;
+                }
+
+                // Nếu có vị trí hợp lệ thì mới bắn lệnh tương tác
+                if (finalInteractPos != Vector2.zero)
+                {
+                    player.playerInteract.Interact(finalInteractPos);
+                }
             }
         }
     }

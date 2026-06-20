@@ -337,9 +337,7 @@ public class LandPlot : MonoBehaviour
     }
     public void ResetAllAndEnablePlayerMovement()
     {
-        //        Debug.Log("reset");
-        //if(isCancleAction) isCancleAction = false;
-
+        // ... (Giữ nguyên đoạn code setup logic phía trên của bạn)
         foreach (Transform _smallPlotTransform in smallPlotList)
         {
             SmallPlot _smallPlot = _smallPlotTransform.GetComponent<SmallPlot>();
@@ -351,20 +349,23 @@ public class LandPlot : MonoBehaviour
         distancePlayerMustDoAction = Vector3.zero;
         inAction = false;
         isImplementActionInBigLandPlot = false;
-        // Debug.Log("reset action");
+
         UIController.Instance.SetCurrentSelectedLandPlot(null);
         UIController.Instance.SetCurrentSelectedSmallPlot(null);
-        //
 
         Player.LocalPlayer.playerMovement.SetMoving(false);
         Player.LocalPlayer.playerMovement.SetBusyDoingAction(false);
         Player.LocalPlayer.moveSpeed = 3;
         Player.LocalPlayer.playerAnimation.ClearAllTrigger();
-        UIController.Instance.landInteraction.DisableAllTools();
 
-
+        // ================= SỬA ĐOẠN NÀY =================
+        // Thêm check null cho chắc chắn và gọi hàm có đồng bộ RPC mạng
+        if (UIController.Instance.landInteraction != null)
+        {
+            UIController.Instance.landInteraction.SetActiveToolAndSync(string.Empty);
+        }
+        // ================================================
     }
-
     private bool IsPlayerInRightSideOfPlot()
     {
         float leftBoundary = transform.position.x - GetPlotSize() / 2;

@@ -39,6 +39,11 @@ public class Launcher : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+
+        PhotonNetwork.SendRate = 60;    
+    // Tăng tần suất đồng bộ vị trí, animation (Để 30 hoặc 60)
+        PhotonNetwork.SerializationRate = 30;
+
         ConfigurePhotonIdentity();
 
         // Đọc file từ ổ cứng ngay khi khởi động
@@ -221,7 +226,12 @@ public class Launcher : MonoBehaviourPunCallbacks
         {
             username = UserData.instance.GetUsername().Trim();
         }
+
+        // Tên hiển thị trùng nhau thoải mái
         PhotonNetwork.NickName = username;
-        PhotonNetwork.AuthValues = new AuthenticationValues(username) { UserId = username };
+
+        // ==== ẨN DÒNG NÀY ĐI BẰNG CÁCH THÊM // Ở ĐẦU ====
+        // PhotonNetwork.AuthValues = new AuthenticationValues(username) { UserId = username };
+        // ===============================================
     }
 }

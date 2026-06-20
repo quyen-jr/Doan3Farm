@@ -114,6 +114,17 @@
                 },
                 {
                     "name": "",
+                    "id": "3828a6d1-370b-4602-8634-e613d79f5151",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "71a9c26d-a25a-4fdc-9e66-1379af54c6a6",
                     "path": "<Touchscreen>/primaryTouch/position",
                     "interactions": "",

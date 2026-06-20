@@ -18587,13 +18587,13 @@ MonoBehaviour:
   ShowParameterInspector: 1
   m_SynchronizeParameters:
   - Type: 4
-    SynchronizeType: 2
+    SynchronizeType: 1
     Name: Move
   - Type: 3
-    SynchronizeType: 2
+    SynchronizeType: 1
     Name: MoveX
   - Type: 3
-    SynchronizeType: 2
+    SynchronizeType: 1
     Name: MoveZ
   - Type: 9
     SynchronizeType: 2
@@ -18620,10 +18620,10 @@ MonoBehaviour:
     SynchronizeType: 2
     Name: Jump
   - Type: 9
-    SynchronizeType: 2
+    SynchronizeType: 1
     Name: Idle
   - Type: 9
-    SynchronizeType: 2
+    SynchronizeType: 1
     Name: Walk
   - Type: 9
     SynchronizeType: 2

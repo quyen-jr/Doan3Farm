@@ -10,29 +10,28 @@ public class LandInteraction : MonoBehaviour
     public GameObject fertilizer;
     public GameObject pickaxe;
     private Dictionary<string, GameObject> _tools = new();
+    
     private PhotonView _photonView;
+    // THÊM: Biến tham chiếu đến script Animation của riêng nhân vật này (không dùng LocalPlayer chung chung nữa)
+    private PlayerAnimation _myPlayerAnimation;
 
     private void Awake()
     {
         _photonView = GetComponentInParent<PhotonView>();
+        // Lấy script PlayerAnimation nằm trên cùng GameObject (hoặc Parent) của nhân vật này
+        _myPlayerAnimation = GetComponentInParent<PlayerAnimation>(); 
     }
 
     private void Start()
     {
-        _tools.Clear();
-        _tools.Add("Hoe", hoe);
-        _tools.Add("Spray", spray);
-        _tools.Add("Watering can", wateringCan);
-        _tools.Add("Fertilizer", fertilizer);
-        _tools.Add("Pickaxe", pickaxe);
+        AddTools();
 
         if (_photonView == null || _photonView.IsMine)
         {
             UIController.Instance.landInteraction = this;
         }
-
-        AddTools();
     }
+
     public void AddTools()
     {
         _tools.Clear();
@@ -42,6 +41,7 @@ public class LandInteraction : MonoBehaviour
         _tools.Add("Fertilizer", fertilizer);
         _tools.Add("Pickaxe", pickaxe);
     }
+
     public void SwitchToolPlayer(List<GameObject> toolObjects)
     {
         DisableAllTools();
@@ -51,58 +51,50 @@ public class LandInteraction : MonoBehaviour
         wateringCan = toolObjects[2];
         fertilizer = toolObjects[3];
         pickaxe = toolObjects[4];
+        
         _tools.Add("Hoe", hoe);
         _tools.Add("Spray", spray);
         _tools.Add("Watering can", wateringCan);
         _tools.Add("Fertilizer", fertilizer);
         _tools.Add("Pickaxe", pickaxe);
     }
-    public void Hoe()
+
+    // ==========================================
+    // CÁC HÀNH ĐỘNG (ĐÃ SỬA ĐỂ ĐỒNG BỘ MẠNG)
+    // ==========================================
+
+    public void Hoe() => ExecuteAction("Hoe", "Hoe");
+    public void Poach() => ExecuteAction("Hoe", "Poach");
+    public void Plant() => ExecuteAction(string.Empty, "Plant");
+    public void Water() => ExecuteAction("Watering can", "Water");
+    public void Fertilize() => ExecuteAction("Fertilizer", "Fertilize");
+    public void Spray() => ExecuteAction("Spray", "Pesticide");
+    public void Harvest() => ExecuteAction(string.Empty, "Harvest");
+
+    private void ExecuteAction(string toolName, string animTrigger)
     {
-        SetActiveToolAndSync("Hoe");
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Hoe");
-    }
-    public void Poach()
-    {
-        SetActiveToolAndSync("Hoe");
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Poach");
+        SetActiveToolAndSync(toolName);
+
+        if (_photonView != null && _photonView.IsMine)
+        {
+            _photonView.RPC(nameof(RpcPlayActionAnim), RpcTarget.All, animTrigger);
+        }
     }
 
-    public void Plant()
+    [PunRPC]
+    private void RpcPlayActionAnim(string triggerName)
     {
-        SetActiveToolAndSync(string.Empty);
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Plant");
+        if (_myPlayerAnimation != null)
+        {
+            _myPlayerAnimation.SetAnimTrigger(triggerName);
+        }
     }
-    public void Water()
-    {
-        SetActiveToolAndSync("Watering can");
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Water");
-    }
-    public void Fertilize()
-    {
-        //if (Player.LocalPlayer != null && Player.LocalPlayer.playerAnimation != null)
-        //{
-        //    if (Player.LocalPlayer.playerAnimation.CheckCurrentAnim("Fertilize"))
-        //    {
-        //        return;
-        //    }
-        //}
 
-        SetActiveToolAndSync("Fertilizer");
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Fertilize");
+    // ==========================================
+    // LOGIC DỤNG CỤ
+    // ==========================================
 
-    }
-    public void Spray()
-    {
-        SetActiveToolAndSync("Spray");
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Pesticide");
-    }
-    public void Harvest()
-    {
-        SetActiveToolAndSync(string.Empty);
-        if (Player.LocalPlayer != null) Player.LocalPlayer.playerAnimation.SetAnimTrigger("Harvest");
-    }
-    private void SetActiveToolAndSync(string toolName)
+    public void SetActiveToolAndSync(string toolName)
     {
         SetActiveToolLocal(toolName);
 
@@ -111,10 +103,10 @@ public class LandInteraction : MonoBehaviour
             _photonView.RPC(nameof(RpcSetActiveTool), RpcTarget.Others, toolName);
         }
     }
+
     private void SetActiveToolLocal(string toolName)
     {
         DisableAllTools();
-
         if (!string.IsNullOrEmpty(toolName))
         {
             EnableTool(toolName);
@@ -134,6 +126,7 @@ public class LandInteraction : MonoBehaviour
             tool.Value.SetActive(false);
         }
     }
+
     public void EnableTool(string toolName)
     {
         foreach (KeyValuePair<string, GameObject> tool in _tools)
@@ -145,6 +138,7 @@ public class LandInteraction : MonoBehaviour
             }
         }
     }
+
     public void DisableTool(string toolName)
     {
         DisableToolLocal(toolName);
@@ -169,5 +163,3 @@ public class LandInteraction : MonoBehaviour
         DisableToolLocal(toolName);
     }
 }
-
-

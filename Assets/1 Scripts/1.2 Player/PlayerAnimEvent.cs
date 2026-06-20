@@ -135,7 +135,6 @@ public class PlayerAnimEvent : MonoBehaviour
 
     public void EndUsingFertilize()
     {
-        Debug.Log("ditme");
         if (!IsLocalPlayer()) return;
         if (UIController.Instance.GetCurrentSelectedLandPlot() == null) return;
         UIController.Instance.GetCurrentSelectedLandPlot().ResetAllAndEnablePlayerMovement();
